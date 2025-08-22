@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Janashakthi Financial Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .kpi-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-item:hover {
+            transform: translateX(4px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6;">
+            <div style="text-align: center;">
+                <div style="width: 64px; height: 64px; border: 4px solid #3b82f6; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">Loading Janashakthi Dashboard</h2>
+                <p style="color: #6b7280;">Please wait while we initialize your financial dashboard...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        
+        // Add error boundary and debugging
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error, e.filename, e.lineno, e.colno);
+        });
+
+        console.log('Dashboard script starting...');
+        
+        // Simple chart components
+        function SimpleBarChart({ data, color }) {
+            try {
+                if (!data || data.length === 0) {
+                    return React.createElement('div', {
+                        className: 'flex items-center justify-center h-full text-gray-500'
+                    }, 'No data available');
+                }
+                
+                const maxValue = Math.max(...data.map(d => Math.max(d.actual || 0, d.budget || 0)));
+                
+                return React.createElement('div', {
+                    className: 'space-y-3'
+                }, data.map((item, index) => 
+                    React.createElement('div', {
+                        key: index,
+                        className: 'space-y-1'
+                    }, [
+                        React.createElement('div', {
+                            key: 'label',
+                            className: 'text-xs font-medium text-gray-700'
+                        }, item.name),
+                        React.createElement('div', {
+                            key: 'bars',
+                            className: 'flex space-x-2'
+                        }, [
+                            React.createElement('div', {
+                                key: 'actual-container',
+                                className: 'flex-1'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'actual-bar',
+                                    className: 'h-6 rounded',
+                                    style: { 
+                                        width: `${Math.max((item.actual / maxValue) * 100, 5)}%`,
+                                        backgroundColor: color || '#3B82F6'
+                                    }
+                                }),
+                                React.createElement('div', {
+                                    key: 'actual-label',
+                                    className: 'text-xs text-gray-600 mt-1'
+                                }, `Actual: ${item.actual || 0}`)
+                            ]),
+                            item.budget && React.createElement('div', {
+                                key: 'budget-container',
+                                className: 'flex-1'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'budget-bar',
+                                    className: 'h-6 bg-gray-300 rounded',
+                                    style: { width: `${Math.max((item.budget / maxValue) * 100, 5)}%` }
+                                }),
+                                React.createElement('div', {
+                                    key: 'budget-label',
+                                    className: 'text-xs text-gray-500 mt-1'
+                                }, `Budget: ${item.budget}`)
+                            ])
+                        ])
+                    ])
+                ));
+            } catch (error) {
+                console.error('Error in SimpleBarChart:', error);
+                return React.createElement('div', { className: 'text-red-500' }, 'Chart Error');
+            }
+        }
+
+        function SimplePieChart({ data }) {
+            try {
+                if (!data || data.length === 0) {
+                    return React.createElement('div', {
+                        className: 'flex items-center justify-center h-full text-gray-500'
+                    }, 'No data available');
+                }
+                
+                const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+                
+                return React.createElement('div', {
+                    className: 'space-y-3'
+                }, data.map((item, index) => 
+                    React.createElement('div', {
+                        key: index,
+                        className: 'flex items-center justify-between p-2 bg-gray-50 rounded'
+                    }, [
+                        React.createElement('div', {
+                            key: 'info',
+                            className: 'flex items-center space-x-3'
+                        }, [
+                            React.createElement('div', {
+                                key: 'color',
+                                className: 'w-4 h-4 rounded',
+                                style: { backgroundColor: item.color || '#3B82F6' }
+                            }),
+                            React.createElement('span', {
+                                key: 'name',
+                                className: 'text-sm font-medium'
+                            }, item.name)
+                        ]),
+                        React.createElement('div', {
+                            key: 'values',
+                            className: 'text-right'
+                        }, [
+                            React.createElement('div', {
+                                key: 'percentage',
+                                className: 'text-sm font-bold'
+                            }, `${total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%`),
+                            React.createElement('div', {
+                                key: 'value',
+                                className: 'text-xs text-gray-500'
+                            }, item.value || 0)
+                        ])
+                    ])
+                ));
+            } catch (error) {
+                console.error('Error in SimplePieChart:', error);
+                return React.createElement('div', { className: 'text-red-500' }, 'Chart Error');
+            }
+        }
+
+        function SimpleLineChart({ data, color }) {
+            try {
+                if (!data || data.length === 0) {
+                    return React.createElement('div', {
+                        className: 'flex items-center justify-center h-full text-gray-500'
+                    }, 'No data available');
+                }
+                
+                return React.createElement('div', {
+                    className: 'space-y-2'
+                }, data.map((item, index) => 
+                    React.createElement('div', {
+                        key: index,
+                        className: 'flex items-center justify-between p-3 bg-gray-50 rounded border-l-4',
+                        style: { borderLeftColor: color || '#3B82F6' }
+                    }, [
+                        React.createElement('span', {
+                            key: 'month',
+                            className: 'text-sm font-medium text-gray-700'
+                        }, item.month),
+                        React.createElement('div', {
+                            key: 'values',
+                            className: 'flex space-x-4 text-sm'
+                        }, [
+                            React.createElement('span', {
+                                key: 'actual',
+                                className: 'font-medium',
+                                style: { color: color || '#3B82F6' }
+                            }, `${item.actual || 0}`),
+                            item.budget && React.createElement('span', {
+                                key: 'budget',
+                                className: 'text-gray-500'
+                            }, `(${item.budget})`)
+                        ])
+                    ])
+                ));
+            } catch (error) {
+                console.error('Error in SimpleLineChart:', error);
+                return React.createElement('div', { className: 'text-red-500' }, 'Chart Error');
+            }
+        }
+        
+        function Dashboard() {
+            console.log('Dashboard component starting...');
+            
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [selectedEntity, setSelectedEntity] = useState('janashakthi-limited');
+            const [selectedMonth, setSelectedMonth] = useState('June');
+            const [selectedYear, setSelectedYear] = useState('2025');
+            const [showLogin, setShowLogin] = useState(false);
+            const [showUpload, setShowUpload] = useState(false);
+            const [password, setPassword] = useState('');
+            const [authToken, setAuthToken] = useState(null);
+            const [uploadFile, setUploadFile] = useState(null);
+            const [uploadLoading, setUploadLoading] = useState(false);
+
+            const entities = [
+                { id: 'janashakthi-limited', name: 'Janashakthi Limited', short: 'JXG', color: '#EA580C' },
+                { id: 'janashakthi-insurance', name: 'Janashakthi Insurance PLC', short: 'JINS', color: '#A16207' },
+                { id: 'first-capital', name: 'First Capital Holdings PLC', short: 'FCH', color: '#1E3A8A' },
+                { id: 'janashakthi-finance', name: 'Janashakthi Finance PLC', short: 'JF', color: '#92400E' }
+            ];
+
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const years = ['2023', '2024', '2025', '2026', '2027'];
+
+            const janashakthiLimitedNoBudgetKPIs = [
+                'Debt to Equity Ratio',
+                'ROE Annualized', 
+                'Total Assets',
+                'Equity',
+                'Staff Count'
+            ];
+
+            useEffect(() => {
+                console.log('useEffect triggered - loading data...');
+                loadData();
+            }, []);
+
+            const loadData = async () => {
+                try {
+                    console.log('Fetching dashboard data...');
+                    const response = await fetch('/api/dashboard-data');
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    const result = await response.json();
+                    console.log('Data received:', result);
+                    setData(result);
+                    setError(null);
+                } catch (err) {
+                    console.error('Error loading data:', err);
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleLogin = async () => {
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        setAuthToken(result.token);
+                        setShowLogin(false);
+                        setShowUpload(true);
+                        setPassword('');
+                    } else {
+                        alert('❌ Wrong password. Try: admin123');
+                    }
+                } catch (error) {
+                    alert('❌ Login failed');
+                }
+            };
+
+            const handleFileUpload = async () => {
+                if (!uploadFile || !authToken) return;
+
+                setUploadLoading(true);
+                try {
+                    const formData = new FormData();
+                    formData.append('dataFile', uploadFile);
+                    formData.append('entityId', selectedEntity);
+                    formData.append('month', selectedMonth);
+                    formData.append('year', selectedYear);
+
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert('✅ ' + result.message);
+                        setShowUpload(false);
+                        setUploadFile(null);
+                        loadData();
+                    } else {
+                        const error = await response.json();
+                        alert('❌ Upload failed: ' + error.error);
+                    }
+                } catch (error) {
+                    alert('❌ Upload failed: ' + error.message);
+                } finally {
+                    setUploadLoading(false);
+                }
+            };
+
+            const currentEntity = entities.find(e => e.id === selectedEntity);
+            const periodKey = `${selectedMonth}-${selectedYear}`;
+            const currentData = data && data[periodKey] && data[periodKey][selectedEntity];
+
+            console.log('Current state:', { 
+                loading, 
+                error, 
+                currentEntity: currentEntity?.name, 
+                periodKey, 
+                hasCurrentData: !!currentData,
+                dataKeys: data ? Object.keys(data) : 'no data'
+            });
+
+            const chartData = useMemo(() => {
+                if (!currentData) return null;
+
+                const performanceData = currentData.kpis ? currentData.kpis.slice(0, 6).map(kpi => ({
+                    name: kpi.name.length > 15 ? kpi.name.substring(0, 15) + '...' : kpi.name,
+                    actual: kpi.actual || 0,
+                    budget: kpi.budget || 0
+                })) : [];
+
+                const financialData = currentData.kpis ? currentData.kpis.filter(kpi => 
+                    kpi.name.includes('PAT') || kpi.name.includes('Assets') || kpi.name.includes('Equity') || kpi.name.includes('Profit')
+                ).slice(0, 4).map((kpi, index) => ({
+                    name: kpi.name,
+                    value: kpi.actual || 0,
+                    color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'][index]
+                })) : [];
+
+                return { performanceData, financialData };
+            }, [currentData]);
+
+            if (loading) {
+                console.log('Rendering loading state...');
+                return React.createElement('div', {
+                    className: 'min-h-screen bg-gray-100 flex items-center justify-center'
+                }, React.createElement('div', {
+                    className: 'text-center'
+                }, [
+                    React.createElement('div', {
+                        key: 'spinner',
+                        className: 'w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full spin mx-auto mb-4'
+                    }),
+                    React.createElement('h2', {
+                        key: 'title',
+                        className: 'text-xl font-bold text-gray-900 mb-2'
+                    }, 'Loading Dashboard'),
+                    React.createElement('p', {
+                        key: 'subtitle',
+                        className: 'text-gray-600'
+                    }, 'Fetching your financial data...')
+                ]));
+            }
+
+            if (error) {
+                console.log('Rendering error state:', error);
+                return React.createElement('div', {
+                    className: 'min-h-screen bg-gray-100 flex items-center justify-center'
+                }, React.createElement('div', {
+                    className: 'text-center max-w-md mx-auto'
+                }, [
+                    React.createElement('h2', {
+                        key: 'title',
+                        className: 'text-xl font-bold text-gray-900 mb-2'
+                    }, 'Connection Error'),
+                    React.createElement('p', {
+                        key: 'message',
+                        className: 'text-gray-600 mb-4'
+                    }, `Error: ${error}`),
+                    React.createElement('button', {
+                        key: 'retry',
+                        onClick: loadData,
+                        className: 'bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700'
+                    }, 'Try Again')
+                ]));
+            }
+
+            if (!currentData) {
+                console.log('Rendering no data state...');
+                return React.createElement('div', {
+                    className: 'min-h-screen bg-gray-100 flex items-center justify-center'
+                }, React.createElement('div', {
+                    className: 'text-center'
+                }, [
+                    React.createElement('h2', {
+                        key: 'title',
+                        className: 'text-xl font-bold text-gray-900 mb-2'
+                    }, 'No Data Available'),
+                    React.createElement('p', {
+                        key: 'message',
+                        className: 'text-gray-600 mb-4'
+                    }, `No data found for ${currentEntity.name} in ${selectedMonth} ${selectedYear}`),
+                    React.createElement('button', {
+                        key: 'setup',
+                        onClick: () => setShowLogin(true),
+                        className: 'bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700'
+                    }, 'Upload Data')
+                ]));
+            }
+
+            console.log('Rendering main dashboard...');
+
+            try {
+                return React.createElement('div', {
+                    className: 'min-h-screen bg-gray-100 flex'
+                }, [
+                    // Login Modal
+                    showLogin && React.createElement('div', {
+                        key: 'login-modal',
+                        className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+                    }, React.createElement('div', {
+                        className: 'bg-white rounded-lg p-6 max-w-md w-full mx-4'
+                    }, [
+                        React.createElement('h3', {
+                            key: 'title',
+                            className: 'text-lg font-bold mb-4'
+                        }, '🔐 Admin Login'),
+                        React.createElement('input', {
+                            key: 'input',
+                            type: 'password',
+                            value: password,
+                            onChange: (e) => setPassword(e.target.value),
+                            onKeyPress: (e) => e.key === 'Enter' && handleLogin(),
+                            placeholder: 'Enter password',
+                            className: 'w-full border border-gray-300 rounded-lg px-4 py-3 mb-4'
+                        }),
+                        React.createElement('div', {
+                            key: 'buttons',
+                            className: 'flex gap-3'
+                        }, [
+                            React.createElement('button', {
+                                key: 'login',
+                                onClick: handleLogin,
+                                className: 'flex-1 btn-primary text-white py-3 rounded-lg'
+                            }, 'Login'),
+                            React.createElement('button', {
+                                key: 'cancel',
+                                onClick: () => setShowLogin(false),
+                                className: 'flex-1 bg-gray-600 text-white py-3 rounded-lg'
+                            }, 'Cancel')
+                        ])
+                    ])),
+
+                    // Upload Modal
+                    showUpload && React.createElement('div', {
+                        key: 'upload-modal',
+                        className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+                    }, React.createElement('div', {
+                        className: 'bg-white rounded-lg p-6 max-w-md w-full mx-4'
+                    }, [
+                        React.createElement('h3', {
+                            key: 'title',
+                            className: 'text-lg font-bold mb-4'
+                        }, '📤 Upload Data'),
+                        React.createElement('div', {
+                            key: 'form',
+                            className: 'space-y-4'
+                        }, [
+                            React.createElement('input', {
+                                key: 'file',
+                                type: 'file',
+                                accept: '.xlsx,.xls,.csv',
+                                onChange: (e) => setUploadFile(e.target.files[0]),
+                                className: 'w-full border border-gray-300 rounded-lg px-3 py-2'
+                            })
+                        ]),
+                        React.createElement('div', {
+                            key: 'buttons',
+                            className: 'flex gap-3 mt-6'
+                        }, [
+                            React.createElement('button', {
+                                key: 'upload',
+                                onClick: handleFileUpload,
+                                disabled: !uploadFile || uploadLoading,
+                                className: 'flex-1 btn-primary text-white py-3 rounded-lg disabled:opacity-50'
+                            }, uploadLoading ? 'Uploading...' : 'Upload'),
+                            React.createElement('button', {
+                                key: 'cancel',
+                                onClick: () => setShowUpload(false),
+                                className: 'flex-1 bg-gray-600 text-white py-3 rounded-lg'
+                            }, 'Cancel')
+                        ])
+                    ])),
+
+                    // Sidebar
+                    React.createElement('div', {
+                        key: 'sidebar',
+                        className: 'w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col'
+                    }, [
+                        React.createElement('div', {
+                            key: 'header',
+                            className: 'p-4 border-b'
+                        }, [
+                            React.createElement('h1', {
+                                key: 'title',
+                                className: 'text-xl font-bold text-gray-900'
+                            }, 'Janashakthi'),
+                            React.createElement('p', {
+                                key: 'subtitle',
+                                className: 'text-sm text-gray-500'
+                            }, 'Financial Dashboard')
+                        ]),
+                        React.createElement('div', {
+                            key: 'period',
+                            className: 'p-4 border-b'
+                        }, [
+                            React.createElement('h3', {
+                                key: 'title',
+                                className: 'text-sm font-bold text-gray-700 mb-3'
+                            }, '📅 Period'),
+                            React.createElement('select', {
+                                key: 'month',
+                                value: selectedMonth,
+                                onChange: (e) => setSelectedMonth(e.target.value),
+                                className: 'w-full border border-gray-300 rounded px-2 py-1 mb-2 text-sm'
+                            }, months.map(month => React.createElement('option', {
+                                key: month,
+                                value: month
+                            }, month))),
+                            React.createElement('select', {
+                                key: 'year',
+                                value: selectedYear,
+                                onChange: (e) => setSelectedYear(e.target.value),
+                                className: 'w-full border border-gray-300 rounded px-2 py-1 text-sm'
+                            }, years.map(year => React.createElement('option', {
+                                key: year,
+                                value: year
+                            }, year)))
+                        ]),
+                        React.createElement('div', {
+                            key: 'entities',
+                            className: 'flex-1 p-4'
+                        }, [
+                            React.createElement('h3', {
+                                key: 'title',
+                                className: 'text-sm font-bold text-gray-700 mb-3'
+                            }, '🏢 Companies'),
+                            React.createElement('div', {
+                                key: 'list',
+                                className: 'space-y-2'
+                            }, entities.map(entity => React.createElement('button', {
+                                key: entity.id,
+                                onClick: () => setSelectedEntity(entity.id),
+                                className: `w-full text-left p-3 rounded-lg transition-all nav-item ${
+                                    selectedEntity === entity.id ? 'text-white shadow-lg' : 'text-gray-700 hover:bg-gray-50'
+                                }`,
+                                style: {
+                                    backgroundColor: selectedEntity === entity.id ? entity.color : undefined
+                                }
+                            }, React.createElement('div', {
+                                className: 'flex items-center gap-3'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'icon',
+                                    className: 'w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs',
+                                    style: { backgroundColor: entity.color }
+                                }, entity.short),
+                                React.createElement('p', {
+                                    key: 'name',
+                                    className: 'font-medium text-sm'
+                                }, entity.name)
+                            ]))))
+                        ])
+                    ]),
+
+                    // Main Content
+                    React.createElement('div', {
+                        key: 'main',
+                        className: 'flex-1'
+                    }, [
+                        React.createElement('div', {
+                            key: 'header',
+                            className: 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg'
+                        }, React.createElement('div', {
+                            className: 'px-6 py-6'
+                        }, React.createElement('div', {
+                            className: 'flex items-center justify-between'
+                        }, [
+                            React.createElement('div', {
+                                key: 'info',
+                                className: 'flex items-center space-x-4'
+                            }, [
+                                React.createElement('div', {
+                                    key: 'logo',
+                                    className: 'w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg',
+                                    style: { backgroundColor: currentEntity.color }
+                                }, currentEntity.short),
+                                React.createElement('div', {
+                                    key: 'details'
+                                }, [
+                                    React.createElement('h1', {
+                                        key: 'name',
+                                        className: 'text-2xl font-bold text-gray-900'
+                                    }, currentEntity.name),
+                                    React.createElement('p', {
+                                        key: 'period',
+                                        className: 'text-sm text-gray-500'
+                                    }, `${selectedMonth} ${selectedYear}`)
+                                ])
+                            ]),
+                            React.createElement('div', {
+                                key: 'actions',
+                                className: 'flex gap-3'
+                            }, [
+                                React.createElement('button', {
+                                    key: 'upload',
+                                    onClick: () => setShowLogin(true),
+                                    className: 'btn-primary text-white px-4 py-2 rounded-lg flex items-center gap-2'
+                                }, [
+                                    React.createElement('svg', {
+                                        key: 'icon',
+                                        className: 'w-4 h-4',
+                                        fill: 'none',
+                                        stroke: 'currentColor',
+                                        viewBox: '0 0 24 24'
+                                    }, React.createElement('path', {
+                                        strokeLinecap: 'round',
+                                        strokeLinejoin: 'round',
+                                        strokeWidth: 2,
+                                        d: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12'
+                                    })),
+                                    'Upload'
+                                ]),
+                                React.createElement('button', {
+                                    key: 'template',
+                                    onClick: () => {
+                                        const link = document.createElement('a');
+                                        link.href = `/api/template/${selectedEntity}`;
+                                        link.download = `${currentEntity.short}_Template.xlsx`;
+                                        link.click();
+                                    },
+                                    className: 'bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2'
+                                }, [
+                                    React.createElement('svg', {
+                                        key: 'icon',
+                                        className: 'w-4 h-4',
+                                        fill: 'none',
+                                        stroke: 'currentColor',
+                                        viewBox: '0 0 24 24'
+                                    }, React.createElement('path', {
+                                        strokeLinecap: 'round',
+                                        strokeLinejoin: 'round',
+                                        strokeWidth: 2,
+                                        d: '
